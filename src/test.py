@@ -13,6 +13,8 @@ rect = [[np.array([1,2]),
          np.array([3,2]),
          np.array([3,3]),
          np.array([1,3])]]
+
+rect += [[ v + 2 for v in rect[0]]]
 envi = RectNamo(rect, state_range)
 
 
@@ -63,9 +65,19 @@ def on_mouse_scroll(x, y, scroll_x, scroll_y):
 
 @window.event
 def on_mouse_drag(x, y, dx, dy, buttons, modifiers):
-    mcoord1 = get_mouse_coord(x, y)
-    mcoord2 = get_mouse_coord(x + dx, y+ dy)
-    pyglet.gl.glTranslatef(mcoord2[0] - mcoord1[0], mcoord2[1] - mcoord1[1], 0)
+    if pyglet.window.mouse.RIGHT & buttons:
+        mcoord1 = get_mouse_coord(x, y)
+        mcoord2 = get_mouse_coord(x + dx, y+ dy)
+        pyglet.gl.glTranslatef(mcoord2[0] - mcoord1[0], mcoord2[1] - mcoord1[1], 0)
+        
+@window.event
+def on_mouse_release(x, y, button, modifiers):
+    if pyglet.window.mouse.LEFT & button:
+        mcoord2 = np.array(get_mouse_coord(x, y)) - envi.agent_size/2
+        mcoord1 = np.min(envi.agent.exterior.coords, axis=0) 
+        envi.move((mcoord2[0] - mcoord1[0], mcoord2[1] - mcoord1[1]))
+        global env_renderer
+        env_renderer = Renderer(environment=envi, render_call=Enviornment_draw)
 
 # def on_key_press(symbol, modifiers):
 #     global index, index_range, rrt_renderer

@@ -15,8 +15,8 @@ def aa_rect_contain_point_test(rectangles, points):
     return within.squeeze()
     
 def aa_get_sweep(rectangle, displacement):
-    points = np.array(rectangle.exterior.coord) + displacement[None,:]
-    return MultiPoint(chain(rectangle.exterior.coord, points)).convex_hull
+    points = np.array(rectangle.exterior.coords) + np.array(displacement)[None,:]
+    return MultiPoint(list(chain(rectangle.exterior.coords, points))).convex_hull
     
 class RectNamo(object):
     
@@ -44,11 +44,11 @@ class RectNamo(object):
             agent_start = np.array(agent_start)
             
         if agent_size is None:
-            agent_size = np.array(self.DEFAULT_AGENT_SIZE)   
+            self.agent_size = np.array(self.DEFAULT_AGENT_SIZE)   
         else:
-            agent_size = np.array(agent_size)
+            self.agent_size = np.array(agent_size)
         
-        end_point = agent_start + agent_size
+        end_point = agent_start + self.agent_size
         self.agent = Polygon([agent_start,
                          (end_point[0], agent_start[1]),
                          end_point,

@@ -30,7 +30,7 @@ class Renderer(object):
 
 def Enviornment_draw(environment,
                      obs_color = (200, 200, 200, 255),
-                     sweep_color = (260, 200, 200, 255),
+                     sweep_color = (200, 200, 260, 255),
                      edge_width = 2.0,
                      point_width = 3.0):
 
@@ -44,7 +44,10 @@ def Enviornment_draw(environment,
     
     if environment.last_sweep is not None:
         add_polygon_render(environment.last_sweep, sweep_group, batch, sweep_color)
+        
+        
     add_polygon_render(obs, group, batch, obs_color)
+    add_polygon_render(environment.agent, group, batch, obs_color)
     return batch
 
 def add_polygon_render(poly, group, batch, color):
