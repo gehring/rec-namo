@@ -31,19 +31,40 @@ class Renderer(object):
 def Enviornment_draw(environment,
                      obs_color = (200, 200, 200, 255),
                      sweep_color = (200, 200, 260, 255),
+                     intersect_color = (200, 50, 50, 255),
+                     c_color = (255,255,255, 50),
                      edge_width = 2.0,
                      point_width = 3.0):
 
     batch = pyglet.graphics.Batch()
     obs =  environment.objects
+    
+    
     sweep_group = line_point_group(line_width = edge_width,
-                                  point_width = point_width)
+                                  point_width = point_width,
+                                  parent = None)
+    
     group = line_point_group(line_width = edge_width,
                                   point_width = point_width,
                                   parent=sweep_group)
     
+    intersect_group = line_point_group(line_width = edge_width,
+                                  point_width = point_width,
+                                  parent=group)
+    
+    c_group = line_point_group(line_width = edge_width,
+                                  point_width = point_width,
+                                  parent=intersect_group)
+    
     if environment.last_sweep is not None:
         add_polygon_render(environment.last_sweep, sweep_group, batch, sweep_color)
+        
+    if environment.intersect is not None:
+        add_polygon_render(environment.intersect, intersect_group, batch, intersect_color)
+        
+    if environment.candidates is not None:
+        for p in environment.candidates:
+            add_polygon_render(p, c_group, batch, c_color)
         
         
     add_polygon_render(obs, group, batch, obs_color)
