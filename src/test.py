@@ -73,7 +73,7 @@ def on_mouse_drag(x, y, dx, dy, buttons, modifiers):
 @window.event
 def on_mouse_release(x, y, button, modifiers):
     if pyglet.window.mouse.LEFT & button:
-        mcoord2 = np.array(get_mouse_coord(x, y)) - envi.agent_size/2
+        mcoord2 = np.array(get_mouse_coord(x, y))# - envi.agent_size/2
         mcoord1 = np.min(envi.agent.exterior.coords, axis=0) 
         envi.move((mcoord2[0] - mcoord1[0], mcoord2[1] - mcoord1[1]))
         global env_renderer

@@ -3,7 +3,7 @@ import numpy as np
 
 from itertools import chain
 
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Polygon, MultiPolygon, MultiPoint, Point, LineString, MultiLineString
 from shapely.geometry.collection import GeometryCollection
 
 class line_point_group(pyglet.graphics.Group):
@@ -33,8 +33,10 @@ def Enviornment_draw(environment,
                      sweep_color = (200, 200, 260, 255),
                      intersect_color = (200, 50, 50, 255),
                      c_color = (255,255,255, 50),
+                     pos_color = (67, 112, 255, 255),
+                     config_colid_color = (200, 70, 70, 255),
                      edge_width = 2.0,
-                     point_width = 3.0):
+                     point_width = 10.0):
 
     batch = pyglet.graphics.Batch()
     obs =  environment.objects
@@ -55,6 +57,9 @@ def Enviornment_draw(environment,
     c_group = line_point_group(line_width = edge_width,
                                   point_width = point_width,
                                   parent=intersect_group)
+    top_group = line_point_group(line_width = edge_width,
+                                  point_width = point_width,
+                                  parent=c_group)
     
     if environment.last_sweep is not None:
         add_polygon_render(environment.last_sweep, sweep_group, batch, sweep_color)
@@ -62,13 +67,18 @@ def Enviornment_draw(environment,
     if environment.intersect is not None:
         add_polygon_render(environment.intersect, intersect_group, batch, intersect_color)
         
-    if environment.candidates is not None:
-        for p in environment.candidates:
-            add_polygon_render(p, c_group, batch, c_color)
         
-        
+    add_polygon_render(environment.config_objects, c_group, batch, c_color)
     add_polygon_render(obs, group, batch, obs_color)
     add_polygon_render(environment.agent, group, batch, obs_color)
+    
+    batch.add(1, pyglet.gl.GL_POINTS, top_group,
+                    ('v2f', environment.agent.exterior.coords[0]),
+                    ('c4B', pos_color))
+    
+    if environment.config_intersect is not None:
+        add_points_render(environment.config_intersect, top_group, batch, config_colid_color)
+    
     return batch
 
 def add_polygon_render(poly, group, batch, color):
@@ -82,10 +92,19 @@ def add_polygon_render(poly, group, batch, color):
         batch.add(len(edges)/2, pyglet.gl.GL_LINES, group,
                                      ('v2f', edges),
                                      ('c4B', color*(len(edges)/2)))
-    else:
+        
+def add_points_render(point, group, batch, color):
+    if isinstance(point, MultiPoint) or isinstance(point, GeometryCollection) \
+        or isinstance(point, MultiLineString):
+        for g in point.geoms:
+            add_points_render(g, group, batch, color)
+    elif isinstance(point, Point):
         batch.add(1, pyglet.gl.GL_POINTS, group,
-                    ('v2f', poly.coord),
+                    ('v2f', np.array(point.coords).squeeze()),
                     ('c4B', color))
+    elif isinstance(point, LineString):
+        add_points_render(point.boundary, group, batch, color)
+        
 
 def set_projection(environment, width, height):
         pyglet.gl.glMatrixMode(pyglet.gl.GL_PROJECTION)
