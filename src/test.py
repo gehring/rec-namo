@@ -1,6 +1,8 @@
 import pyglet
 import numpy as np
 
+from pyglet.window import key
+
 from recnamo.renderer import Renderer, Enviornment_draw, get_mouse_coord, set_projection
 from recnamo.recnamo import RectNamo
 
@@ -15,6 +17,12 @@ rect = [[np.array([1,2]),
          np.array([1,3])]]
 
 rect += [[ v + 2 for v in rect[0]]]
+
+rect += [[np.array([1,5]),
+         np.array([3,5]),
+         np.array([3,7]),
+         np.array([1,7])]]
+
 envi = RectNamo(rect, state_range)
 
 
@@ -79,22 +87,19 @@ def on_mouse_release(x, y, button, modifiers):
         global env_renderer
         env_renderer = Renderer(environment=envi, render_call=Enviornment_draw)
 
-# def on_key_press(symbol, modifiers):
-#     global index, index_range, rrt_renderer
-#     if symbol == key.RIGHT:
-#         index = np.clip(index + 1, *index_range)
-#         rrt_renderer = Renderer(rrt_data=rrt_data,
-#                                 render_call=RRT_draw,
-#                                 index = index)
-#     if symbol == key.LEFT:
-#         index = np.clip(index -1, *index_range)
-#         rrt_renderer = Renderer(rrt_data=rrt_data,
-#                                 render_call=RRT_draw,
-#                                 index = index)
-# 
-# 
-# 
-# window.push_handlers(on_key_press)
+def on_key_press(symbol, modifiers):
+    if symbol == key._1:
+        envi.attached = 0
+    if symbol == key._2:
+        envi.attached = 1
+    if symbol == key._3:
+        envi.attached = 2
+    if symbol == key.D:
+        envi.attached = None
+ 
+ 
+ 
+window.push_handlers(on_key_press)
 
 
 if __name__ == '__main__':

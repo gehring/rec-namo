@@ -5,6 +5,7 @@ from itertools import chain
 
 from shapely.geometry import Polygon, MultiPolygon, MultiPoint, Point, LineString, MultiLineString
 from shapely.geometry.collection import GeometryCollection
+from shapely.ops import unary_union
 
 class line_point_group(pyglet.graphics.Group):
     def __init__(self, line_width, point_width,  parent = None):
@@ -33,6 +34,7 @@ def Enviornment_draw(environment,
                      sweep_color = (200, 200, 260, 255),
                      intersect_color = (200, 50, 50, 255),
                      c_color = (255,255,255, 50),
+                     c2_color = (50,50,255, 50),
                      pos_color = (67, 112, 255, 255),
                      config_colid_color = (200, 70, 70, 255),
                      edge_width = 2.0,
@@ -67,7 +69,7 @@ def Enviornment_draw(environment,
     if environment.intersect is not None:
         add_polygon_render(environment.intersect, intersect_group, batch, intersect_color)
         
-        
+#     add_polygon_render(unary_union(environment.obs_config[0]), c_group, batch, c2_color)
     add_polygon_render(environment.config_objects, c_group, batch, c_color)
     add_polygon_render(obs, group, batch, obs_color)
     add_polygon_render(environment.agent, group, batch, obs_color)
