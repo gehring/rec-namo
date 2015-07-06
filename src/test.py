@@ -4,26 +4,28 @@ import numpy as np
 from pyglet.window import key
 
 from recnamo.renderer import Renderer, Enviornment_draw, get_mouse_coord, set_projection
-from recnamo.recnamo import RectNamo
+from recnamo.recnamo import RectNamo,parse_world
 
 
 # CREATE ENVIRONMENT
 
-state_range = [np.ones(2)*-3, np.ones(2) *3]
+# state_range = [np.ones(2)*-3, np.ones(2) *3]
+# 
+# rect = [[np.array([1,2]),
+#          np.array([3,2]),
+#          np.array([3,3]),
+#          np.array([1,3])]]
 
-rect = [[np.array([1,2]),
-         np.array([3,2]),
-         np.array([3,3]),
-         np.array([1,3])]]
-
-rect += [[ v + 2 for v in rect[0]]]
-
-rect += [[np.array([1,5]),
-         np.array([3,5]),
-         np.array([3,7]),
-         np.array([1,7])]]
-
-envi = RectNamo(rect, state_range)
+# rect += [[ v + 2 for v in rect[0]]]
+# 
+# rect += [[np.array([1,5]),
+#          np.array([3,5]),
+#          np.array([3,7]),
+#          np.array([1,7])]]
+s_range, poly = parse_world('testworld.xml')
+envi = RectNamo(poly, s_range)
+envi.state = np.array([-2., -2., -2., -2., 0.])
+print envi.is_valid_state(np.array([-2., -2., -2., -2., 0.]))
 
 
 
@@ -88,14 +90,8 @@ def on_mouse_release(x, y, button, modifiers):
         env_renderer = Renderer(environment=envi, render_call=Enviornment_draw)
 
 def on_key_press(symbol, modifiers):
-    if symbol == key._1:
-        envi.attached = 0
-    if symbol == key._2:
-        envi.attached = 1
-    if symbol == key._3:
-        envi.attached = 2
     if symbol == key.D:
-        envi.attached = None
+        envi.toggle_grab()
  
  
  

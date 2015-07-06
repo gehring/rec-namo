@@ -1,8 +1,10 @@
 import numpy as np
-from shapely.geometry import Polygon, LinearRing, MultiPoint, MultiLineString
+from shapely.geometry import Polygon, LinearRing, MultiPoint, MultiLineString, Point
 from shapely.ops import cascaded_union, unary_union
 from shapely.affinity import translate
 from shapely.geometry.collection import GeometryCollection
+
+import xml.etree.ElementTree as ET
 
 from itertools import chain
 from shapely.geometry.linestring import LineString
@@ -15,6 +17,25 @@ def aa_rect_contain_point_test(rectangles, points):
     within = min_rect[:,None,:] < points[None,:,:] & max_rect[:,None,:] > points[None,:,:]
     within = np.all(within, axis=2)
     return within.squeeze()
+    
+
+def parse_world(filename):
+    e = ET.parse(filename).getroot()
+    polygons = []
+    for ce in e.findall('obstacle'):
+        vertex = [(float(ve.attrib['x']), float(ve.attrib['y']))
+                         for ve in ce.findall('vertex')]
+        polygons.append(vertex)  
+    re= e.find('rangex')
+    rangex = ( float(re.attrib['min']), float(re.attrib['max']) )
+
+    re= e.find('rangey')
+    rangey = ( float(re.attrib['min']), float(re.attrib['max']) )
+
+    return ((np.array([rangex[0], rangey[0]]),
+             np.array([rangex[1], rangey[1]])),
+            polygons)
+    
     
 def aa_get_sweep(rectangle, displacement):
     points = np.array(rectangle.exterior.coords) + np.array(displacement)[None,:]
@@ -74,7 +95,7 @@ class RectNamo(object):
                          (agent_start[0], end_point[1])])
         
         self.poly = poly
-        self.config_poly = compute_config_obst(self.agent, poly)
+        self.config_poly = compute_config_all_obst(self.agent, poly)
         self.config_objects = unary_union(self.config_poly)
         
         self.obs_config = { i : compute_config_all_obst(self.poly[i], self.poly[:i] + self.poly[i+1:]) for i in range(len(self.poly))}
@@ -103,6 +124,8 @@ class RectNamo(object):
         self.config_intersect = config_obstacle.intersection(LineString([self.agent.exterior.coords[0],
                                                                                np.array(self.agent.exterior.coords[0]) + np.array(displacement)]))
         
+#         print self.config_intersect
+        
         if self.config_intersect.is_empty or self.config_intersect.geom_type == 'Point':
             self.intersect = None
             self.config_intersect = None
@@ -120,6 +143,7 @@ class RectNamo(object):
             poly_intersect = unary_union(self.obs_config[index]).intersection(LineString([self.poly[index].exterior.coords[0],
                                                                                np.array(self.poly[index].exterior.coords[0]) + np.array(displacement)]))
         
+#             print 'obs', poly_intersect
             if poly_intersect.is_empty or poly_intersect.geom_type == 'Point':
                 pass
             else:
@@ -129,6 +153,7 @@ class RectNamo(object):
                     points = np.array(poly_intersect.coords)
                 i = np.argmin(np.linalg.norm(points - np.array(self.poly[index].exterior.coords[0])[None,:], axis=1))
                 point = points[i]
+                obs_pos = point
                 displacement = point - np.array(self.poly[index].exterior.coords[0])
             self.move_obs(index, displacement)
             
@@ -154,3 +179,67 @@ class RectNamo(object):
                                        xoff = displacement[0], 
                                        yoff = displacement[1])
         self.objects = unary_union(self.poly)
+
+    def move_agent_to(self, pos):
+        end_point = np.zeros(2) + self.agent_size
+        self.agent = Polygon([pos,
+                         (end_point[0], pos[1]),
+                         end_point,
+                         (pos[0], end_point[1])])
+
+    def toggle_grab(self):
+        if self.attached is None:
+            distance_to_poly = np.empty(len(self.poly))
+            for i in xrange(len(self.poly)):
+                distance_to_poly[i] = self.poly[i].distance(self.agent)
+                
+                                                   
+            i = np.argmin(distance_to_poly)
+            if distance_to_poly[i]<= self.EPS:
+                self.attached = i
+        else:
+            self.attached = None
+            
+    def is_valid_state(self, state):
+        s = self.state
+        self.state = state
+        
+        if self.attached is not None:
+            config_obstacle = unary_union(self.config_poly[:self.attached] + self.config_poly[self.attached+1:])
+        else:
+            config_obstacle = self.config_objects
+        collide = config_obstacle.intersects(Point(self.agent.exterior.coords[0]))
+        
+        for i in xrange(len(self.poly)):
+            if collide:
+                break
+            collide |= unary_union(self.obs_config[i]).intersects(Point(self.poly[i].exterior.coords[0]))
+            
+        self.state = s
+            
+        return not collide
+    
+    @property
+    def state(self):
+        state = np.hstack(chain([p.exterior.coords[0] for p in self.poly],
+                                [self.agent.exterior.coords[0]],
+                                [0 if self.attached is None else 1]))
+        return state
+    
+    @state.setter
+    def state(self, value):
+        d_state = value - self.state
+        
+        self.agent = translate(self.agent, d_state[-3], d_state[-2])
+        
+        for i in xrange(len(self.poly)):
+            self.move_obs(i, d_state[i*2:(i+1)*2])
+            
+        
+        
+        # if attach bit is active, set the agent attached to the closest polygon
+        self.attached = None
+        if value[-1] > 0.0:
+            self.toggle_grab()
+        
+            

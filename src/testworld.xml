@@ -1,0 +1,22 @@
+<world>
+	<rangex min="-2" max="12"/>
+	<rangey min="-2" max="12"/>
+	<obstacle>
+        <vertex x="3" y="3"/>
+        <vertex x="5" y="3"/>
+        <vertex x="5" y="4"/>
+        <vertex x="3" y="4"/>
+    </obstacle>
+    <!-- <obstacle>
+        <vertex x="6" y="3"/>
+        <vertex x="8" y="3"/>
+        <vertex x="8" y="4"/>
+        <vertex x="6" y="4"/>
+    </obstacle>
+    <obstacle>
+        <vertex x="6" y="5"/>
+        <vertex x="8" y="5"/>
+        <vertex x="8" y="6"/>
+        <vertex x="6" y="6"/>
+    </obstacle> -->
+</world>
