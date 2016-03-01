@@ -1,4 +1,6 @@
 import numpy as np
+from scipy import sparse as sp
+
 
 class gridnamo(object):
     
@@ -7,7 +9,7 @@ class gridnamo(object):
                np.array((0, 1), dtype = 'int'),
                np.array((0, -1), dtype = 'int')]
     
-    def __init__(self, size, objects, limits, walls = None):
+    def __init__(self, objects, limits, walls = None):
         i = 0
         world = {}
         object_pos = []
@@ -24,7 +26,8 @@ class gridnamo(object):
         if walls is not None:
             for w in walls:
                 world[tuple(w)] = -1
-        self.limits = limits
+        self.walls = walls
+        self.limits = np.tile(limits, reps=len(objects) + 1)
         self.world = world
         self.obj_pos = object_pos
     
@@ -33,8 +36,8 @@ class gridnamo(object):
             collision = False
             next_a = self.agent + self.actions[a]
             
-            collision |= not(np.all(self.limits[0] <= next_a) 
-                                 and np.all(self.limits[1] > next_a))
+            collision |= not(np.all(0 <= next_a) 
+                                 and np.all(self.limits > next_a))
             
             if self.attached is None:
                 
@@ -66,8 +69,6 @@ class gridnamo(object):
                         self.attached = self.world[pos]
                         break
                     
-        
-        pass
     
     def move_agent(self, next_a):
         del self.world[tuple(self.agent)]
@@ -80,5 +81,60 @@ class gridnamo(object):
         self.world[tuple(self.obj_pos[obj])] = obj
         
         
+    def get_binary_vector(self, states):
+        if states.ndim == 1:
+            states = states.reshape((1,-1))
+        limits = self.limits
+        index = np.ravel_multi_index(states.T, limits)
+        s = sp.coo_matrix((np.ones(index.shape[0]), (np.arange(index.shape[0]), index)), shape =(index.shape[0], np.prod(limits) ))
+        return s
+    
+    def get_state_vector(self, binary_states):
+        limits = self.limits
+        binary_states = binary_states.tocoo()
+        states = np.unravel_index(binary_states.col, limits)
+        return np.array(states, dtype='int').T
+        
+    def get_state(self):
+        state = np.hstack((self.obj_pos + [self.agent])).astype('int')
+        return state
+    
+    def set_state_from_binary(self, binary):
+        state = self.get_state_vector(binary).squeeze()
+        self.set_state(state)
+        
+    def set_state(self, state):
+        world = {}
+        object_pos = []
+        for i in xrange(0, state.shape[0]-2, 2):
+            o = tuple(state[i:i+1])
+            world[o] = int(i/2)
+            object_pos.append(np.array(o), dtype = 'int')
+            
+        agent_pos = state[-2:]
+        world[tuple(agent_pos)] = self.agent_id
+        self.agent = np.array(agent_pos, dtype = 'int')
+            
+            
+        if self.walls is not None:
+            for w in self.walls:
+                world[tuple(w)] = -1
+                
+        self.world = world
+        self.obj_pos = object_pos
+        
     def is_state_valid(self, state):
         pass
+    
+    def get_state_img(self, state):
+        img = np.zeros(self.limits[:2])
+        img[self.agent[0], self.agent[1]] = 1
+        for o in self.obj_pos:
+            img[o[0], o[1]] = 2
+        if self.walls is not None:
+            for w in self.walls:
+                img[w[0], w[1]] = 3
+        return img.T
+    
+        
+        

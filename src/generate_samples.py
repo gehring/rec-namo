@@ -170,7 +170,7 @@ ntilings = ([10] * (dim-1) + [1] +
 
                 
 phi = IndexToBinarySparse(TileCoding(input_indices, ntiles, ntilings, None, s_range, bias_term = True))
-phi = RandomProjector(phi, n_dim = 2000)
+phi = RandomProjector(phi, n_dim = 1000)
 print phi.size
 Fs = []
 for a_samples in samples:
